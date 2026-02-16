@@ -1,47 +1,47 @@
 # OCR Service
 
-Stateless OCR microservice that converts document images to Markdown, HTML, or JSON. Designed for multi-model support with vLLM serving.
+Stateless OCR microservice that converts document images to Markdown, HTML, or JSON.
 
 ## Features
 
-- Multiple OCR engines (Dolphin, more coming)
+- Dual backend: HuggingFace Transformers (CPU/GPU) or vLLM (GPU, high-performance)
 - Output formats: Markdown, HTML, JSON
-- Async processing with vLLM backend
-- Batch processing support
+- Async processing with batch support
 - Simple API key authentication (optional)
 
 ## Quick Start
 
-### 1. Install dependencies
-
 ```bash
-pip install -r requirements.txt
+# Install dependencies
+uv sync
+
+# Run (uses Transformers backend by default)
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
-### 2. Start vLLM server with Dolphin model
-
-```bash
-vllm serve ByteDance/Dolphin-v2 --port 8000
-```
-
-### 3. Run the service
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8080
-```
+First run downloads the model (~6GB).
 
 ## Configuration
 
-Environment variables (prefix: `OCR_`):
+Environment variables (prefix `OCR_`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OCR_DEFAULT_ENGINE` | `dolphin` | Default OCR engine |
-| `OCR_DOLPHIN_VLLM_URL` | `http://localhost:8000/v1` | Dolphin vLLM endpoint |
-| `OCR_DOLPHIN_MODEL_NAME` | `ByteDance/Dolphin-v2` | Model name in vLLM |
-| `OCR_MAX_BATCH_SIZE` | `8` | Max batch size |
-| `OCR_REQUEST_TIMEOUT` | `120` | Request timeout (seconds) |
+| `OCR_DOLPHIN_BACKEND` | `transformers` | Backend: `transformers` or `vllm` |
+| `OCR_DOLPHIN_MODEL` | `ByteDance/Dolphin-v2` | Model name/path |
+| `OCR_DOLPHIN_VLLM_URL` | `http://localhost:8000/v1` | vLLM endpoint (if using vllm backend) |
+| `OCR_REQUEST_TIMEOUT` | `300` | Request timeout (seconds) |
 | `OCR_API_KEY` | `None` | API key for auth (optional) |
+
+### Using vLLM Backend (GPU, faster)
+
+```bash
+# Terminal 1: Start vLLM
+uv run vllm serve ByteDance/Dolphin-v2 --port 8000 --trust-remote-code
+
+# Terminal 2: Start service
+OCR_DOLPHIN_BACKEND=vllm uv run uvicorn app.main:app --port 8080
+```
 
 ## API Endpoints
 
@@ -52,7 +52,6 @@ Environment variables (prefix: `OCR_`):
 ```json
 {
   "image": "<base64-encoded-image>",
-  "engine": "dolphin",
   "format": "markdown"
 }
 ```
@@ -71,9 +70,11 @@ Response:
 
 **POST** `/api/v1/ocr/upload`
 
-- `file`: Image file (multipart)
-- `engine`: OCR engine (optional)
-- `format`: Output format (optional)
+```bash
+curl -X POST http://localhost:8080/api/v1/ocr/upload \
+  -F "file=@document.png" \
+  -F "format=markdown"
+```
 
 ### Batch Processing
 
@@ -82,43 +83,47 @@ Response:
 ```json
 {
   "images": ["<base64>", "<base64>"],
-  "engine": "dolphin",
   "format": "markdown"
 }
 ```
 
 ### Health Check
 
-- **GET** `/api/v1/health` - Basic health
-- **GET** `/api/v1/ready` - Readiness (engines loaded)
+- `GET /api/v1/health` - Basic health
+- `GET /api/v1/ready` - Readiness (engine loaded)
 
 ## Project Structure
 
 ```
 app/
-├── main.py                 # FastAPI app
+├── main.py
 ├── core/
-│   ├── config.py           # Settings
-│   └── exceptions.py       # Custom exceptions
+│   ├── config.py
+│   └── exceptions.py
 ├── api/v1/
-│   ├── router.py           # Route aggregator
-│   ├── deps.py             # Dependencies
-│   ├── schemas/            # Request/Response models
-│   └── routes/             # Endpoint handlers
+│   ├── deps.py
+│   ├── schemas/
+│   └── routes/
 ├── engines/
-│   ├── base.py             # OCREngine ABC
-│   ├── registry.py         # Engine registry
-│   └── dolphin/            # Dolphin implementation
+│   ├── base.py
+│   ├── registry.py
+│   └── dolphin/
+│       ├── engine.py
+│       ├── backends/
+│       │   ├── transformers.py
+│       │   └── vllm.py
+│       ├── prompts.py
+│       └── utils.py
 └── services/
-    └── ocr_service.py      # Business logic
+    └── ocr_service.py
 ```
 
 ## Adding New Engines
 
-1. Create folder: `app/engines/<name>/`
-2. Implement engine extending `OCREngine`
+1. Create `app/engines/<name>/engine.py`
+2. Extend `OCREngine` base class
 3. Register with `@EngineRegistry.register("<name>")`
-4. Import in `app/main.py` to register
+4. Import in `app/main.py`
 
 ## License
 

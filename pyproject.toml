@@ -1,12 +1,11 @@
 [project]
-name = "ocr"
+name = "ocr-service"
 version = "0.1.0"
-description = "Add your description here"
+description = "OCR microservice converting document images to Markdown, HTML, or JSON"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "accelerate>=1.12.0",
-    "asyncio>=4.0.0",
     "fastapi>=0.129.0",
     "httpx>=0.28.1",
     "pillow>=12.1.1",
@@ -18,5 +17,7 @@ dependencies = [
     "torch>=2.9.1",
     "transformers>=4.57.6",
     "uvicorn>=0.40.0",
-    "vllm>=0.15.1",
 ]
+
+[project.optional-dependencies]
+vllm = ["vllm>=0.6.0"]

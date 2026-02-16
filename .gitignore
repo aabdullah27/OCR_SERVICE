@@ -12,5 +12,7 @@ wheels/
 # Environment Variable
 .env
 
-# TXT
+# Misc
 code.txt
+*.log
+.DS_Store
