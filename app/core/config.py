@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,12 +7,11 @@ class Settings(BaseSettings):
 
     default_engine: str = "dolphin"
 
+    dolphin_backend: Literal["transformers", "vllm"] = "transformers"
+    dolphin_model: str = "ByteDance/Dolphin-v2"
     dolphin_vllm_url: str = "http://localhost:8000/v1"
-    dolphin_model_name: str = "ByteDance/Dolphin-v2"
 
-    max_batch_size: int = 8
-    request_timeout: int = 120
-
+    request_timeout: int = 300
     api_key: str | None = None
 
 
