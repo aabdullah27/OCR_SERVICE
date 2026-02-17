@@ -57,4 +57,8 @@ class VLLMBackend(DolphinBackend):
 
         response = await self.client.post(f"{self.vllm_url}/chat/completions", json=payload)
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        data = response.json()
+        try:
+            return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError) as e:
+            raise VLLMConnectionError(self.vllm_url, f"Malformed response: {e}")

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal
 
-OutputFormat = Literal["markdown", "html", "json"]
+OutputFormat = Literal["markdown"]
 
 
 @dataclass

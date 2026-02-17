@@ -10,23 +10,15 @@ from app.core.exceptions import OCRException
 from app.engines.registry import EngineRegistry
 
 import app.engines.dolphin.engine  # noqa: F401
+import app.engines.gemini.engine  # noqa: F401
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print(f"[Startup] Initializing OCR engines (backend: {settings.dolphin_backend})...")
-
-    await EngineRegistry.initialize_engine(
-        "dolphin",
-        backend=settings.dolphin_backend,
-        model=settings.dolphin_model,
-        vllm_url=settings.dolphin_vllm_url,
-        timeout=settings.request_timeout,
-    )
-
-    print(f"[Startup] Engines ready: {EngineRegistry.list_initialized()}")
+    print(f"[Startup] Initializing engine: {settings.DEFAULT_ENGINE}")
+    await EngineRegistry.initialize_engine(settings.DEFAULT_ENGINE)
+    print(f"[Startup] Engine ready: {settings.DEFAULT_ENGINE}")
     yield
-
     print("[Shutdown] Cleaning up engines...")
     await EngineRegistry.cleanup_all()
 

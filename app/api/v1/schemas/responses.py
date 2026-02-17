@@ -23,6 +23,22 @@ class BatchOCRResponse(BaseModel):
     processing_time_ms: int
 
 
+class JSONLItemResult(BaseModel):
+    id: str | None = None
+    content: str | None = None
+    success: bool
+    error: str | None = None
+
+
+class JSONLBatchResponse(BaseModel):
+    results: list[JSONLItemResult]
+    engine: str
+    processing_time_ms: int
+    total: int
+    succeeded: int
+    failed: int
+
+
 class HealthResponse(BaseModel):
     status: str
     engines: list[str] = Field(default_factory=list)

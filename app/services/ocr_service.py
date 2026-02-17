@@ -9,7 +9,7 @@ from app.core.exceptions import UnsupportedFormatError, ImageProcessingError
 
 class OCRService:
     def __init__(self):
-        self.default_engine = settings.default_engine
+        self.default_engine = settings.DEFAULT_ENGINE
 
     def _get_engine(self, engine_name: str | None):
         name = engine_name or self.default_engine

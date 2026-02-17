@@ -9,8 +9,8 @@ def get_ocr_service() -> OCRService:
 
 
 async def verify_api_key(x_api_key: str | None = Header(None)) -> None:
-    if settings.api_key is None:
+    if settings.API_KEY is None:
         return
 
-    if x_api_key != settings.api_key:
+    if x_api_key != settings.API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")

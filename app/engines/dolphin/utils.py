@@ -1,6 +1,5 @@
 import base64
 import io
-import json
 import re
 from PIL import Image
 
@@ -96,38 +95,3 @@ def elements_to_markdown(elements: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def elements_to_html(elements: list[dict]) -> str:
-    sorted_elements = sorted(elements, key=lambda x: x.get("reading_order", 0))
-    parts = ["<div class='document'>"]
-
-    for elem in sorted_elements:
-        text = elem.get("text", "").strip()
-        if not text:
-            continue
-
-        label = elem.get("label", "")
-        bbox = elem.get("bbox", [])
-
-        bbox_attr = f"data-bbox='{json.dumps(bbox)}'" if bbox else ""
-
-        if label == "equ":
-            parts.append(f"<div class='equation' {bbox_attr}>{text}</div>")
-        elif label == "code":
-            parts.append(f"<pre class='code' {bbox_attr}><code>{text}</code></pre>")
-        elif label == "tab":
-            parts.append(f"<div class='table' {bbox_attr}>{text}</div>")
-        elif label == "fig":
-            parts.append(f"<figure {bbox_attr}>{text}</figure>")
-        elif label == "title":
-            parts.append(f"<h1 {bbox_attr}>{text}</h1>")
-        else:
-            parts.append(f"<p {bbox_attr}>{text}</p>")
-
-    parts.append("</div>")
-    return "\n".join(parts)
-
-
-def elements_to_json(elements: list[dict]) -> str:
-    sorted_elements = sorted(elements, key=lambda x: x.get("reading_order", 0))
-    output = {"elements": sorted_elements}
-    return json.dumps(output, ensure_ascii=False, indent=2)

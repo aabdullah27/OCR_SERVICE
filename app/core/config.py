@@ -5,16 +5,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OCR_", env_file=".env", extra="ignore")
 
-    default_engine: str = "dolphin"
-    api_key: str | None = None
-    request_timeout: int = 300
+    # Core
+    DEFAULT_ENGINE: str = "dolphin"
+    API_KEY: str | None = None
+    REQUEST_TIMEOUT: int = 300
 
-    dolphin_backend: Literal["transformers", "vllm"] = "transformers"
-    dolphin_model: str = "ByteDance/Dolphin-v2"
-    dolphin_vllm_url: str = "http://localhost:8000/v1"
+    # Dolphin engine
+    DOLPHIN_BACKEND: Literal["transformers", "vllm"] = "transformers"
+    DOLPHIN_MODEL: str = "ByteDance/Dolphin-v2"
+    DOLPHIN_VLLM_URL: str = "http://localhost:8000/v1"
 
-    google_api_key: str | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    # Gemini engine
+    GOOGLE_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MAX_CONCURRENT: int = 10
 
 
 settings = Settings()

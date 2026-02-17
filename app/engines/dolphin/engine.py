@@ -4,39 +4,31 @@ from app.engines.base import OCREngine, OCRResult, OutputFormat
 from app.engines.registry import EngineRegistry
 from app.engines.dolphin.backends.base import DolphinBackend
 from app.engines.dolphin.prompts import LAYOUT_PROMPT, get_element_prompt
-from app.engines.dolphin.utils import (
-    bytes_to_image,
-    parse_layout_string,
-    process_coordinates,
-    elements_to_markdown,
-    elements_to_html,
-    elements_to_json,
-)
+from app.engines.dolphin.utils import bytes_to_image, parse_layout_string, process_coordinates, elements_to_markdown
+from app.core.config import settings
 from app.core.exceptions import ImageProcessingError
 
 
 @EngineRegistry.register("dolphin")
 class DolphinEngine(OCREngine):
     name = "dolphin"
-    supported_formats: list[OutputFormat] = ["markdown", "html", "json"]
+    supported_formats: list[OutputFormat] = ["markdown"]
 
-    def __init__(self, backend: str, model: str, vllm_url: str = "", timeout: int = 300):
-        self.backend_type = backend
-        self.model = model
-        self.vllm_url = vllm_url
-        self.timeout = timeout
+    def __init__(self):
         self.backend: DolphinBackend | None = None
 
     async def initialize(self) -> None:
-        if self.backend_type == "vllm":
+        print(f"[DolphinEngine] Initializing with backend={settings.DOLPHIN_BACKEND}, model={settings.DOLPHIN_MODEL}")
+
+        if settings.DOLPHIN_BACKEND == "vllm":
             from app.engines.dolphin.backends.vllm import VLLMBackend
-            self.backend = VLLMBackend(self.vllm_url, self.model, self.timeout)
+            self.backend = VLLMBackend(settings.DOLPHIN_VLLM_URL, settings.DOLPHIN_MODEL, settings.REQUEST_TIMEOUT)
         else:
             from app.engines.dolphin.backends.transformers import TransformersBackend
-            self.backend = TransformersBackend(self.model)
+            self.backend = TransformersBackend(settings.DOLPHIN_MODEL)
 
         await self.backend.initialize()
-        print(f"[DolphinEngine] Initialized with {self.backend_type} backend")
+        print(f"[DolphinEngine] Ready")
 
     async def health_check(self) -> bool:
         return self.backend is not None and await self.backend.health_check()
@@ -55,6 +47,7 @@ class DolphinEngine(OCREngine):
         elements = await self._process_document(image)
         content = self._format_output(elements, output_format)
 
+        print(f"[DolphinEngine] Processed image: {len(elements)} elements, {len(content)} chars")
         return OCRResult(content=content, format=output_format, metadata={"element_count": len(elements)})
 
     async def _process_document(self, image: Image.Image) -> list[dict]:
@@ -92,10 +85,18 @@ class DolphinEngine(OCREngine):
         return results
 
     def _format_output(self, elements: list[dict], output_format: OutputFormat) -> str:
-        if output_format == "markdown":
-            return elements_to_markdown(elements)
-        elif output_format == "html":
-            return elements_to_html(elements)
-        elif output_format == "json":
-            return elements_to_json(elements)
         return elements_to_markdown(elements)
+
+    async def process_batch(self, images: list[bytes], output_format: OutputFormat = "markdown") -> list[OCRResult | Exception]:
+        results = []
+        for i, img in enumerate(images):
+            try:
+                result = await self.process(img, output_format)
+                results.append(result)
+            except Exception as e:
+                results.append(e)
+            print(f"[DolphinEngine] Batch progress: {i + 1}/{len(images)}")
+
+        succeeded = sum(1 for r in results if not isinstance(r, Exception))
+        print(f"[DolphinEngine] Batch complete: {succeeded}/{len(images)} succeeded")
+        return results
